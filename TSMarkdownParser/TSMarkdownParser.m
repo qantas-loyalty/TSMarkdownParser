@@ -103,7 +103,7 @@ typedef NSFont UIFont;
         NSMutableString *listString = [NSMutableString string];
         while (--level)
             [listString appendString:@"\t"];
-        [listString appendString:@"•\t"];
+        [listString appendString:@"• \t  "];
         [attributedString replaceCharactersInRange:range withString:listString];
     } textFormattingBlock:^(NSMutableAttributedString *attributedString, NSRange range, NSUInteger level) {
         [TSMarkdownParser addAttributes:weakParser.listAttributes atIndex:level - 1 toString:attributedString range:range];
@@ -285,11 +285,15 @@ static NSString *const TSMarkdownEmRegex            = @"(\\*|_)(.+?)(\\1)";
     NSRegularExpression *expression = [NSRegularExpression regularExpressionWithPattern:regex options:NSRegularExpressionAnchorsMatchLines error:nil];
     [self addParsingRuleWithRegularExpression:expression block:^(NSTextCheckingResult *match, NSMutableAttributedString *attributedString) {
         NSUInteger level = [match rangeAtIndex:1].length;
+        NSRange leadRange = NSMakeRange([match rangeAtIndex:1].location, [match rangeAtIndex:2].location - [match rangeAtIndex:1].location);
         // formatting string (may alter the length)
-        if (formattingBlock)
-            formattingBlock(attributedString, [match rangeAtIndex:2], level);
+        if (formattingBlock) {
+            NSRange matched = [match rangeAtIndex:2];
+            NSRange lineRange = NSMakeRange(matched.location - leadRange.length, matched.length + leadRange.length);
+            formattingBlock(attributedString, lineRange, level);
+        }
         // formatting leading markdown (may alter the length)
-        leadFormattingBlock(attributedString, NSMakeRange([match rangeAtIndex:1].location, [match rangeAtIndex:2].location - [match rangeAtIndex:1].location), level);
+        leadFormattingBlock(attributedString, leadRange, level);
     }];
 }
 
